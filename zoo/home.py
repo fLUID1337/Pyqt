@@ -31,6 +31,7 @@ class Pizza(QWidget):
     def slider(self,value):
         #self.setGeometry(250,250,160 +int((value + (1)) *2 ), 100)
         self.cor+=50
+        print(self.cor)
         self.update()
 
         
