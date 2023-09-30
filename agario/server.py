@@ -1,5 +1,6 @@
 import socket
 import time
+import pygame
 from data.players import Players
 from data import db_sesion
 db_sesion.global_init()
@@ -10,6 +11,16 @@ main_socket.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)
 main_socket.bind(("localhost",10000))
 main_socket.setblocking(False)
 main_socket.listen(5)
+
+pygame.init()
+WIDTH_ROOM,HEIGHT_ROOM=4000,4000
+WIDTH_SERVER,HEIGHT_SERVER=300,300
+FPS=100
+
+screen=pygame.display.set_mode((WIDTH_SERVER,HEIGHT_SERVER))
+pygame.display.set_caption("Agario")
+clock=pygame.time.Clock()
+
 
 class Local_Player:
     def __init__(self,id,name,sock,addr):
@@ -26,32 +37,47 @@ class Local_Player:
         self.x_speed=0
         self.y_speed=0
         
-players=[]
+players={}
 
-while True: 
+run=True
+while run:
+    clock.tick(FPS) 
+    for event in pygame.event.get():
+        if event.type==pygame.QUIT:
+            run=False
     try:
         new_socket,addr=main_socket.accept()
         print(f"Подключился {addr}")
         new_socket.setblocking(False)
-        players.append(new_socket)
+        player=Players("abc",addr)
+        session.merge(player)
+        session.commit()
+        addr=f"({addr[0]},{addr[1]})"
+        data=session.query(Players).filter(Players.addres==addr).first()
+        player=Local_Player(data.id,data.name,new_socket,addr)
+        players[data.id]=player
     except BlockingIOError:
         pass 
  
-    for sock in players:
+    for id in list(players):
         try:
-            data=sock.recv(1024).decode()
+            data=players[id].sock.recv(1024).decode()
             print(f"Получил {data}")
         except:
             pass  
     
-    for sock in players:
+    for id in list(players):
         try:
-            sock.send("Cъел".encode())
+            players[id].sock.send("Cъел".encode())
         except:
-            players.remove(sock)
-            sock.close()
+            players[id].sock.close()
+            del players[id]
+            session.query(Players).filter(Players.id==id).delete()
+            session.commit()
             print("Пользователь отключен")    
             
-            
-                             
-    time.sleep(1)    
+pygame.quit()           
+main_socket.close()
+session.query(Players).delete()
+session.commit()                             
+        
