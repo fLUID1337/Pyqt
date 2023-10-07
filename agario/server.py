@@ -37,6 +37,20 @@ class Local_Player:
         self.x_speed=0
         self.y_speed=0
         
+    def update(self):
+        self.x+=self.x_speed
+        self.y+=self.y_speed 
+     
+    def change_speed(self,vektor):
+        vektor=list(map(int,vektor.split(",")))
+        print(vektor)
+        if vektor[0]==0 and vektor[1]==0:
+            self.x_speed=self.y_speed=0
+        else:
+            vektor=vektor[0]*self.abs_speed,vektor[1]*self.abs_speed
+            self.x_speed=vektor[0]
+            self.y_speed=vektor[1]         
+        
 players={}
 
 run=True
@@ -58,11 +72,13 @@ while run:
         players[data.id]=player
     except BlockingIOError:
         pass 
- 
+        
     for id in list(players):
         try:
             data=players[id].sock.recv(1024).decode()
             print(f"Получил {data}")
+            players[id].change_speed(data)
+            print("aaaa")
         except:
             pass  
     
@@ -74,7 +90,21 @@ while run:
             del players[id]
             session.query(Players).filter(Players.id==id).delete()
             session.commit()
-            print("Пользователь отключен")    
+            print("Пользователь отключен")
+            
+    screen.fill('black') 
+    for id in players:
+        player = players[id]
+        x = player.x * WIDTH_SERVER // WIDTH_ROOM
+        y = player.y * HEIGHT_SERVER // HEIGHT_ROOM
+        size = player.size * WIDTH_SERVER // WIDTH_ROOM
+        pygame.draw.circle(screen, "yellow2", (x, y), size)
+        
+    for id in players:
+        player = players[id]
+        players[id].update()
+    
+    pygame.display.update()           
             
 pygame.quit()           
 main_socket.close()
