@@ -42,7 +42,7 @@ class Local_Player:
         self.y+=self.y_speed 
      
     def change_speed(self,vektor):
-        vektor=list(map(int,vektor.split(",")))
+        vektor=list(map(float,vektor.split(",")))
         print(vektor)
         if vektor[0]==0 and vektor[1]==0:
             self.x_speed=self.y_speed=0
@@ -78,7 +78,6 @@ while run:
             data=players[id].sock.recv(1024).decode()
             print(f"Получил {data}")
             players[id].change_speed(data)
-            print("aaaa")
         except:
             pass  
     
