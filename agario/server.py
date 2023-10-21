@@ -23,7 +23,7 @@ clock=pygame.time.Clock()
 
 
 class Local_Player:
-    def __init__(self,id,name,sock,addr):
+    def __init__(self,id,name,sock,addr,color):
         self.id=id
         self.db:Players=session.get(Players,self.id)
         self.sock=sock
@@ -36,6 +36,9 @@ class Local_Player:
         self.abs_speed=1
         self.x_speed=0
         self.y_speed=0
+        self.color=color
+        self.w_vision=800
+        self.h_vision=600
         
     def update(self):
         self.x+=self.x_speed
@@ -63,24 +66,48 @@ while run:
         new_socket,addr=main_socket.accept()
         print(f"Подключился {addr}")
         new_socket.setblocking(False)
-        player=Players("abc",addr)
+        login=new_socket.recv(1024).decode()
+        login=login.split(",")
+        player=Players(login[1],addr)
+        player.color=login[0]
         session.merge(player)
         session.commit()
         addr=f"({addr[0]},{addr[1]})"
         data=session.query(Players).filter(Players.addres==addr).first()
-        player=Local_Player(data.id,data.name,new_socket,addr)
+        player=Local_Player(data.id,data.name,new_socket,addr,data.color)
         players[data.id]=player
+        
+        
     except BlockingIOError:
         pass 
         
     for id in list(players):
         try:
             data=players[id].sock.recv(1024).decode()
-            print(f"Получил {data}")
+            #print(f"Получил {data}")
             players[id].change_speed(data)
         except:
             pass  
     
+    visibale_bacteries={}
+    for id in list(players):
+        visibale_bacteries[id]=[]
+        pairs=list(players.items())
+        for i in range(len(pairs)):
+            for j in range(i+1,len(pairs)):
+                p_1:Players=pairs[i][1]   
+                p_2:Players=pairs[j][1]
+                dist_x = p_2.x - p_1.x
+                dist_y = p_2.y - p_1.y
+                if abs(dist_x) <= p_1.w_vision // 2 + p_2.size and abs(dist_y) <= p_1.h_vision // 2 + p_2.size:
+                    data=f"{round(dist_x)},{round(dist_y)},{round(p_2.size)},{p_2.color}"
+                    visibale_bacteries[p_2.id].append(data)
+                if abs(dist_x) <= p_2.w_vision // 2 + p_1.size and abs(dist_y) <= p_2.h_vision // 2 + p_1.size:
+                    data=f"{round(dist_x)},{round(dist_y)},{round(p_1.size)},{p_1.color}"
+                    visibale_bacteries[p_1.id].append(data)    
+                    
+
+
     for id in list(players):
         try:
             players[id].sock.send("Cъел".encode())
@@ -97,7 +124,7 @@ while run:
         x = player.x * WIDTH_SERVER // WIDTH_ROOM
         y = player.y * HEIGHT_SERVER // HEIGHT_ROOM
         size = player.size * WIDTH_SERVER // WIDTH_ROOM
-        pygame.draw.circle(screen, "yellow2", (x, y), size)
+        pygame.draw.circle(screen, player.color, (x, y), size)
         
     for id in players:
         player = players[id]
