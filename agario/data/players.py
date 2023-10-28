@@ -20,5 +20,6 @@ class Players(sqlalchemy_base):
     def __init__(self,name,addr):
         self.name=name
         self.addres=addr
+        
     
     

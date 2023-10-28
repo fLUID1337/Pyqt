@@ -52,7 +52,33 @@ class Local_Player:
         else:
             vektor=vektor[0]*self.abs_speed,vektor[1]*self.abs_speed
             self.x_speed=vektor[0]
-            self.y_speed=vektor[1]         
+            self.y_speed=vektor[1] 
+             
+    def load(self):
+        self.size=self.db.size
+        self.abs_speed=self.db.abs_speed 
+        self.x_speed=self.db.speed_x 
+        self.y_speed=self.db.speed_y 
+        self.x=self.db.x 
+        self.y=self.db.y 
+        self.errors=self.db.errors 
+        self.color=self.db.color 
+        self.h_vision=self.db.h_vision 
+        self.w_vision=self.db.w_vision 
+        return self
+    
+    def sync(self):
+        self.db.size=self.size
+        self.db.abs_speed=self.abs_speed 
+        self.db.speed_x=self.x_speed
+        self.db.speed_y=self.y_speed
+        self.db.x=self.x 
+        self.db.y=self.y 
+        self.db.errors=self.errors 
+        self.db.color=self.color 
+        self.db.h_vision=self.h_vision 
+        self.db.w_vision=self.w_vision 
+        return self                   
         
 players={}
 
@@ -74,7 +100,7 @@ while run:
         session.commit()
         addr=f"({addr[0]},{addr[1]})"
         data=session.query(Players).filter(Players.addres==addr).first()
-        player=Local_Player(data.id,data.name,new_socket,addr,data.color)
+        player=Local_Player(data.id,data.name,new_socket,addr,data.color).load()
         players[data.id]=player
         
         
@@ -100,17 +126,20 @@ while run:
                 dist_x = p_2.x - p_1.x
                 dist_y = p_2.y - p_1.y
                 if abs(dist_x) <= p_1.w_vision // 2 + p_2.size and abs(dist_y) <= p_1.h_vision // 2 + p_2.size:
-                    data=f"{round(dist_x)},{round(dist_y)},{round(p_2.size)},{p_2.color}"
-                    visibale_bacteries[p_2.id].append(data)
+                    data=f"{round(dist_x)} {round(dist_y)} {round(p_2.size)} {p_2.color}"
+                    visibale_bacteries[p_1.id].append(data)
                 if abs(dist_x) <= p_2.w_vision // 2 + p_1.size and abs(dist_y) <= p_2.h_vision // 2 + p_1.size:
-                    data=f"{round(dist_x)},{round(dist_y)},{round(p_1.size)},{p_1.color}"
-                    visibale_bacteries[p_1.id].append(data)    
-                    
+                    data=f"{round(dist_x)} {round(dist_y)} {round(p_1.size)} {p_1.color}"
+                    visibale_bacteries[p_2.id].append(data)    
+        
+    for id in list(players):    
+        visibale_bacteries[id]="$"+",".join(visibale_bacteries[id])
+        print(visibale_bacteries[id])            
 
 
     for id in list(players):
         try:
-            players[id].sock.send("Cъел".encode())
+            players[id].sock.send(visibale_bacteries[id].encode())
         except:
             players[id].sock.close()
             del players[id]

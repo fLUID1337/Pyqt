@@ -18,7 +18,16 @@ def login():
         root.destroy()
         root.quit()
     else:
-        tkinter.messagebox.showerror("Ошибка","Вы не выбрали имя или цвет.")        
+        tkinter.messagebox.showerror("Ошибка","Вы не выбрали имя или цвет.") 
+        
+def draw_bacteries(data:list[str]):
+    for bacteries in data:
+        data_2=bacteries.split(" ")
+        x=CC[0]+int(data_2[0]) 
+        y=CC[1]+int(data_2[1])
+        size=int(data_2[2])
+        color=data_2[3]
+        pygame.draw.circle(screen,color,(x,y),size)              
 
 colors= ['Maroon', 'DarkRed', 'FireBrick', 'Red', 'Salmon',
          'Tomato', 'Coral', 'OrangeRed', 'Chocolate', 'SandyBrown',
@@ -84,10 +93,12 @@ while run:
         if vektor!=old:
             old=vektor
             sock.send(f"{vektor[0]},{vektor[1]}".encode()) 
-    data=sock.recv(1024).decode()
+    data=sock.recv(1024).decode().replace("$","").split(",")
     print(f"Получил {data}")
     screen.fill('gray')
     pygame.draw.circle(screen, color, CC, radius)
+    if data !=[""]:
+        draw_bacteries(data)
     pygame.display.update()
 
 pygame.quit()    
