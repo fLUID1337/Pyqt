@@ -46,7 +46,6 @@ class Local_Player:
      
     def change_speed(self,vektor):
         vektor=list(map(float,vektor.split(",")))
-        print(vektor)
         if vektor[0]==0 and vektor[1]==0:
             self.x_speed=self.y_speed=0
         else:
@@ -95,6 +94,7 @@ while run:
         login=new_socket.recv(1024).decode()
         login=login.split(",")
         player=Players(login[1],addr)
+        print(login[0])
         player.color=login[0]
         session.merge(player)
         session.commit()
@@ -118,28 +118,29 @@ while run:
     visibale_bacteries={}
     for id in list(players):
         visibale_bacteries[id]=[]
-        pairs=list(players.items())
-        for i in range(len(pairs)):
-            for j in range(i+1,len(pairs)):
-                p_1:Players=pairs[i][1]   
-                p_2:Players=pairs[j][1]
-                dist_x = p_2.x - p_1.x
-                dist_y = p_2.y - p_1.y
-                if abs(dist_x) <= p_1.w_vision // 2 + p_2.size and abs(dist_y) <= p_1.h_vision // 2 + p_2.size:
-                    data=f"{round(dist_x)} {round(dist_y)} {round(p_2.size)} {p_2.color}"
-                    visibale_bacteries[p_1.id].append(data)
-                if abs(dist_x) <= p_2.w_vision // 2 + p_1.size and abs(dist_y) <= p_2.h_vision // 2 + p_1.size:
-                    data=f"{round(dist_x)} {round(dist_y)} {round(p_1.size)} {p_1.color}"
-                    visibale_bacteries[p_2.id].append(data)    
+    pairs=list(players.items())
+    for i in range(len(pairs)):
+        for j in range(i+1,len(pairs)):
+            p_1:Players=pairs[i][1]   
+            p_2:Players=pairs[j][1]
+            dist_x = p_2.x - p_1.x
+            dist_y = p_2.y - p_1.y
+            if abs(dist_x) <= p_1.w_vision // 2 + p_2.size and abs(dist_y) <= p_1.h_vision // 2 + p_2.size:
+                data=f"{round(dist_x)} {round(dist_y)} {round(p_2.size)} {p_2.color}"
+                visibale_bacteries[p_1.id].append(data)
+            if abs(dist_x) <= p_2.w_vision // 2 + p_1.size and abs(dist_y) <= p_2.h_vision // 2 + p_1.size:
+                data=f"{round(dist_x)} {round(dist_y)} {round(p_1.size)} {p_1.color}"
+                visibale_bacteries[p_2.id].append(data)    
         
     for id in list(players):    
         visibale_bacteries[id]="$"+",".join(visibale_bacteries[id])
-        print(visibale_bacteries[id])            
+                    
 
 
     for id in list(players):
         try:
             players[id].sock.send(visibale_bacteries[id].encode())
+            print(visibale_bacteries[id])
         except:
             players[id].sock.close()
             del players[id]

@@ -94,7 +94,7 @@ while run:
             old=vektor
             sock.send(f"{vektor[0]},{vektor[1]}".encode()) 
     data=sock.recv(1024).decode().replace("$","").split(",")
-    print(f"Получил {data}")
+    print(data)
     screen.fill('gray')
     pygame.draw.circle(screen, color, CC, radius)
     if data !=[""]:
