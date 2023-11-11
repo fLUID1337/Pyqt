@@ -36,7 +36,7 @@ colors= ['Maroon', 'DarkRed', 'FireBrick', 'Red', 'Salmon',
          'LawnGreen', 'Green', 'Lime', 'Lime Green', 'SpringGreen', 'MediumSpringGreen',
          'Turquoise', 'LightSeaGreen', 'MediumTurquoise', 'Teal', 'DarkCyan',
          'Aqua', 'Cyan', 'Dark Turquoise', 'DeepSkyBlue', 'DodgerBlue', 
-         'RoyalBlue', 'Navy', 'DarkBlue', 'MediumBlue.']
+         'RoyalBlue', 'Navy', 'DarkBlue', 'MediumBlue']
 
 name=""
 color=""
@@ -61,12 +61,6 @@ btn.pack()
 root.mainloop()
 
 
-sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-sock.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)
-sock.connect(("localhost",10000))
-
-sock.send(f"{color},{name}".encode())
-
 radius = 50
 pygame.init()
 width=800
@@ -78,6 +72,12 @@ run=True
 CC=(width//2,height//2)           
 radius=50
 old=(0,0)
+
+sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+sock.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)
+sock.connect(("localhost",10000))
+
+sock.send(f"{color},{name}".encode())
 
 while run:
     for event in pygame.event.get():
@@ -94,7 +94,6 @@ while run:
             old=vektor
             sock.send(f"{vektor[0]},{vektor[1]}".encode()) 
     data=sock.recv(1024).decode().replace("$","").split(",")
-    print(data)
     screen.fill('gray')
     pygame.draw.circle(screen, color, CC, radius)
     if data !=[""]:
