@@ -95,9 +95,11 @@ while run:
             sock.send(f"{vektor[0]},{vektor[1]}".encode()) 
     data=sock.recv(1024).decode().replace("$","").split(",")
     screen.fill('gray')
-    pygame.draw.circle(screen, color, CC, radius)
     if data !=[""]:
-        draw_bacteries(data)
+        print(data)
+        radius=int(data[0])
+        draw_bacteries(data[1:])
+    pygame.draw.circle(screen, color, CC, radius)
     pygame.display.update()
 
 pygame.quit()    
