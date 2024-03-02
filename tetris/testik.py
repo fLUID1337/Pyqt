@@ -141,7 +141,7 @@ class Board(QFrame):
         for g in row_to_removes:
             for k in range(g,Board.board_height):
                 for l in range(Board.board_width):
-                    self.setShapeAt(l,k,self.shape_At(l,k+1))    
+                    self.setshapeAt(l,k,self.shape_At(l,k+1))    
         num_full_lines += len(row_to_removes)
         if num_full_lines >0:
             self.numLinesRemoved += num_full_lines
@@ -336,4 +336,4 @@ class Shape():
 if __name__=="__main__":
     a = QApplication(sys.argv)
     d = Tetris("tetris")
-    sys.exit(a.exec())            
+    sys.exit(a.exec()) 
