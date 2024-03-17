@@ -1,339 +1,371 @@
-import sys,random
-from PyQt5.QtWidgets import QMainWindow,QFrame,QLabel,QApplication
+import sys
+import random
+from PyQt5.QtWidgets import QMainWindow, QFrame, QLabel, QApplication
 from PyQt5.QtCore import Qt, QBasicTimer
-from PyQt5.QtGui import QPainter,QColor
+from PyQt5.QtGui import QPainter, QColor
+
 
 class Tetris(QMainWindow):
-    def __init__(self,name):
+    def __init__(self, main, app):
         super().__init__()
-        self.tboard=None
-        self.name=name
-        self.initUi()
-        
-    def initUi(self):
-        self.setFixedSize(360,760)
-        self.setWindowTitle(self.name)
-        self.tboard = Board(self)
-        self.tboard.start()
-        self.setCentralWidget(self.tboard)
+        self.tboard = None
+        self.main = main
+        self.app = app
+        self.app.aboutToQuit.connect(self.closeEvent)
+        self.initUI()
+
+    def initUI(self):
+        self.setFixedSize(360, 760)
+        self.setWindowTitle(self.main.name_row.text())
         self.show()
-  
+        self.tboard = Board(self, self.main)
+        self.setCentralWidget(self.tboard)
+        self.tboard.start()
+
+    def closeEvent(self, event):
+        self.main.score = self.tboard.numLinesRemoved
+        event.accept()
+        self.main.show()
+
+
 class Board(QFrame):
-    board_width=10
-    board_height=20
-    speed=300
-    
-    def __init__(self,parent):
+    BoardWidth = 10
+    BoardHeight = 22
+    Speed = 300
+
+    def __init__(self, parent, main):
         super().__init__(parent)
-        self.score=0  
-        self.score_label=QLabel(self)
-        self.score_label.setGeometry(0,0,200,10)
+        self.main = main
+        self.score = 0
+        self.score_label = QLabel(self)
+        self.score_label.setGeometry(0, 0, 200, 10)
         self.score_label.setText(str(self.score))
-        self.init_Board()
-    
-    def init_Board(self):
-        self.timer=QBasicTimer()
-        self.isWaitingAfterLine=False
-        self.cur_x=0
-        self.cur_y=0   
-        self.numLinesRemoved=0
-        self.board=[] 
+        self.initBoard()
+
+    def initBoard(self):
+        self.timer = QBasicTimer()
+        self.isWaitingAfterLine = False
+
+        self.curX = 0
+        self.curY = 0
+        self.numLinesRemoved = 0
+        self.board = []
+
         self.setFocusPolicy(Qt.StrongFocus)
-        self.isStarted=False
-        self.isPaused=False
-        self.clear_board()
-    
-    def shape_At(self,x,y):
-        return self.board[(y*Board.board_width)+x] 
-    
-    def setShapeAt(self,x,y,shape):
-        self.board[(y * Board.board_width) + x ] = shape
-        
-    def square_width(self):
-        return self.contentsRect().width()//Board.board_width
-    
-    def square_height(self):
-        return self.contentsRect().height()//Board.board_height
-    
-    def keyPressEvent(self,event):
-        if not self.isStarted or self.cur_piece.shape() == Tetraminoe.no_shape:
-            super(Board,self).keyPressEvent(event)
+        self.isStarted = False
+        self.isPaused = False
+        self.clearBoard()
+
+    def shapeAt(self, x, y):
+        return self.board[(y * Board.BoardWidth) + x]
+
+    def setShapeAt(self, x, y, shape):
+        self.board[(y * Board.BoardWidth) + x] = shape
+
+    def squareWidth(self):
+        return self.contentsRect().width() // Board.BoardWidth
+
+    def squareHeight(self):
+        return self.contentsRect().height() // Board.BoardHeight
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        rect = self.contentsRect()
+
+        boardTop = rect.bottom() - Board.BoardHeight * self.squareHeight()
+
+        for i in range(Board.BoardHeight):
+            for j in range(Board.BoardWidth):
+                shape = self.shapeAt(j, Board.BoardHeight - i - 1)
+
+                if shape != Tetrominoe.NoShape:
+                    self.drawSquare(painter,
+                                    rect.left() + j * self.squareWidth(),
+                                    boardTop + i * self.squareHeight(), shape)
+
+        if self.curPiece.shape() != Tetrominoe.NoShape:
+
+            for i in range(4):
+                x = self.curX + self.curPiece.x(i)
+                y = self.curY - self.curPiece.y(i)
+                self.drawSquare(painter, rect.left() + x * self.squareWidth(),
+                                boardTop + (Board.BoardHeight - y - 1) * self.squareHeight(),
+                                self.curPiece.shape())
+
+    def keyPressEvent(self, event):
+        if not self.isStarted or self.curPiece.shape() == Tetrominoe.NoShape:
+            super(Board, self).keyPressEvent(event)
             return
-        key = event.key()  
-        
+        key = event.key()
         if key == Qt.Key_P:
-            self.paused()
+            self.pause()
             return
-        
         if self.isPaused:
             return
         elif key == Qt.Key_Left:
-            self.try_move(self.cur_piece,self.cur_x - 1,self.cur_y)
-            
+            self.tryMove(self.curPiece, self.curX - 1, self.curY)
         elif key == Qt.Key_Right:
-            self.try_move(self.cur_piece,self.cur_x + 1,self.cur_y)  
-            
-        elif key == Qt.Key_Up:
-            self.try_move(self.cur_piece.rotate_left(),self.cur_x,self.cur_y)
-            
+            self.tryMove(self.curPiece, self.curX + 1, self.curY)
         elif key == Qt.Key_Down:
-            self.try_move(self.cur_piece.rotate_right(),self.cur_x,self.cur_y)
-            
+            self.tryMove(self.curPiece.rotateRight(), self.curX, self.curY)
+        elif key == Qt.Key_Up:
+            self.tryMove(self.curPiece.rotateLeft(), self.curX, self.curY)
         elif key == Qt.Key_Space:
-            self.drop_down()
-            
+            self.dropDown()
+
         elif key == Qt.Key_D:
-            self.one_line_down()
-            
+            self.oneLineDown()
+
         else:
-            super(Board,self).keyPressEvent(event)
-    
-    def try_move(self,newPiece,newX,newY):
-        for i in range(4): 
-            
+            super(Board, self).keyPressEvent(event)
+
+    def tryMove(self, newPiece, newX, newY):
+
+        for i in range(4):
+
             x = newX + newPiece.x(i)
-            y = newY + newPiece.y(i) 
-            
-            if x < 0 or x >= Board.board_width or y < 0 or y >= Board.board_height:
+            y = newY - newPiece.y(i)
+
+            if x < 0 or x >= Board.BoardWidth or y < 0 or y >= Board.BoardHeight:
                 return False
-            if self.shape_At(x,y) != Tetraminoe.no_shape:
+
+            if self.shapeAt(x, y) != Tetrominoe.NoShape:
                 return False
-            
-        self.cur_piece = newPiece
-        self.cur_x = newX    
-        self.cur_y = newY    
+
+        self.curPiece = newPiece
+        self.curX = newX
+        self.curY = newY
         self.update()
-        
+
         return True
-    
-    def timerEvent(self,event):
-        
+
+    def timerEvent(self, event):
+
         if event.timerId() == self.timer.timerId():
-            
+
             if self.isWaitingAfterLine:
                 self.isWaitingAfterLine = False
-                self.new_piece()
+                self.newPiece()
             else:
-                self.one_line_down()
-                
+                self.oneLineDown()
+
         else:
-            super(Board,self).timerEvent(event)   
-            
-    def clear_board(self):
-        
-        for i in range(Board.board_height * Board.board_width):
-            self.board.append(Tetraminoe.no_shape)
-    
-    def remove_full_lines(self):
- 
-        
-        num_full_lines=0
-        row_to_removes=[]
-        
-        for i in range(Board.board_height):
-            n=0
-            for j in range(Board.board_width):
-                if not self.shape_At(j,i) == Tetraminoe.no_shape:
-                    n += 1   
+            super(Board, self).timerEvent(event)
+
+    def clearBoard(self):
+        for i in range(Board.BoardHeight * Board.BoardWidth):
+            self.board.append(Tetrominoe.NoShape)
+
+    def removeFullLines(self):
+
+        numFullLines = 0
+        rowsToRemove = []
+
+        for i in range(Board.BoardHeight):
+
+            n = 0
+            for j in range(Board.BoardWidth):
+                if not self.shapeAt(j, i) == Tetrominoe.NoShape:
+                    n = n + 1
+
             if n == 10:
-                row_to_removes.append(i)                            
-        row_to_removes.reverse()
-        for g in row_to_removes:
-            for k in range(g,Board.board_height):
-                for l in range(Board.board_width):
-                    self.setshapeAt(l,k,self.shape_At(l,k+1))    
-        num_full_lines += len(row_to_removes)
-        if num_full_lines >0:
-            self.numLinesRemoved += num_full_lines
-            self.score_label.setText(f"{self.numLinesRemoved}")  
+                rowsToRemove.append(i)
+
+        rowsToRemove.reverse()
+
+        for m in rowsToRemove:
+
+            for k in range(m, Board.BoardHeight):
+                for l in range(Board.BoardWidth):
+                    self.setShapeAt(l, k, self.shapeAt(l, k + 1))
+
+        numFullLines = numFullLines + len(rowsToRemove)
+
+        if numFullLines > 0:
+            self.numLinesRemoved = self.numLinesRemoved + numFullLines
+            self.score_label.setText(f"{self.numLinesRemoved}")
             self.isWaitingAfterLine = True
-            self.cur_piece.setShape(Tetraminoe.no_shape)
-            self.update() 
-            
-    def new_piece(self):
-        self.cur_piece = Shape()
-        self.cur_piece.set_random_shape()
-        self.cur_x = Board.board_width // 2 + 1   
-        self.cur_y = Board.board_height - 1 + self.cur_piece.min_y()
-        if not self.try_move(self.cur_piece,self.cur_x,self.cur_y):
-            self.cur_piece.setShape(Tetraminoe.no_shape)
+            self.curPiece.setShape(Tetrominoe.NoShape)
+            self.update()
+
+    def newPiece(self):
+        self.curPiece = Shape()
+        self.curPiece.setRandomShape()
+        self.curX = Board.BoardWidth // 2 + 1
+        self.curY = Board.BoardHeight - 1 + self.curPiece.minY()
+
+        if not self.tryMove(self.curPiece, self.curX, self.curY):
+            self.curPiece.setShape(Tetrominoe.NoShape)
             self.timer.stop()
             self.isStarted = False
-            self.game_over()            
-                                   
-    def draw_square(self,painter:QPainter,x,y,shape):
+            self.game_over()
+
+    def drawSquare(self, painter, x, y, shape):
         colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
                       0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
         color = QColor(colorTable[shape])
-        painter.fillRect(x + 1, y + 1,self.square_width() - 2,self.square_height() - 2,color)
+        painter.fillRect(x + 1, y + 1, self.squareWidth() - 2,
+                         self.squareHeight() - 2, color)
         painter.setPen(color.lighter())
-        painter.drawLine(x,y + self.square_height() - 1,x,y)
-        painter.drawLine(x,y,x + self.square_width(),y)
+        painter.drawLine(x, y + self.squareHeight() - 1, x, y)
+        painter.drawLine(x, y, x + self.squareWidth() - 1, y)
         painter.setPen(color.darker())
-        painter.drawLine(x + 1,y + self.square_height() - 1,x + self.square_width() - 1,y + self.square_height() - 1)
-        painter.drawLine(x + self.square_width() - 1,y + 1,x + self.square_width() - 1,y + self.square_height() - 1)
+        painter.drawLine(x + 1, y + self.squareHeight() - 1,
+                         x + self.squareWidth() - 1, y + self.squareHeight() - 1)
+        painter.drawLine(x + self.squareWidth() - 1,
+                         y + self.squareHeight() - 1, x + self.squareWidth() - 1, y + 1)
 
-    def drop_down(self):
-        new_y = self.cur_y
-        while new_y > 0:
-            if not self.try_move(self.cur_piece,self.cur_x,new_y - 1):
+    def dropDown(self):
+        newY = self.curY
+        while newY > 0:
+            if not self.tryMove(self.curPiece, self.curX, newY - 1):
                 break
-            new_y -= 1
-        self.piece_dropped()
-        
-    def piece_dropped(self):
+            newY -= 1
+        self.pieceDropped()
+
+    def pieceDropped(self):
         for i in range(4):
-            x = self.cur_x + self.cur_piece.x(i)
-            y = self.cur_y - self.cur_piece.y(i)
-            self.setShapeAt(x,y,self.cur_piece.shape())
-        self.remove_full_lines()
+            x = self.curX + self.curPiece.x(i)
+            y = self.curY - self.curPiece.y(i)
+            self.setShapeAt(x, y, self.curPiece.shape())
+        self.removeFullLines()
         if not self.isWaitingAfterLine:
-            self.new_piece()
-    
-    def one_line_down(self):
-        if not self.try_move(self.cur_piece,self.cur_x,self.cur_y - 1):
-            self.piece_dropped()
-                       
+            self.newPiece()
+
+    def oneLineDown(self):
+        if not self.tryMove(self.curPiece, self.curX, self.curY - 1):
+            self.pieceDropped()
+
     def start(self):
         if self.isPaused:
             return
+
         self.isStarted = True
         self.isWaitingAfterLine = False
         self.numLinesRemoved = 0
-        self.clear_board()
+        self.clearBoard()
+
         self.score_label.setText(str(self.numLinesRemoved))
-        self.new_piece()
-        self.timer.start(Board.speed,self)
-        
-    def paused(self):
+        self.newPiece()
+        self.timer.start(Board.Speed, self)
+
+    def pause(self):
         if not self.isStarted:
             return
         self.isPaused = not self.isPaused
         if self.isPaused:
             self.timer.stop()
-            self.score_label.setText("Пауза")
+            self.score_label.setText("paused")
         else:
-            self.score_label.setText(str(self.numLinesRemoved))
-            self.timer.start(Board.speed,self) 
-    
-    def game_over(self):
-        self.setWindowTitle("Вы проиграли!")                                   
-        
-        
-    def paintEvent(self,event):
-        painter=QPainter(self)
-        rect=self.contentsRect()
-        board_Top=rect.bottom()-Board.board_height*self.square_height()
-        
-        for i in range(Board.board_height):
-            for j in range(Board.board_width):
-                shape=self.shape_At(j,Board.board_height-i-1)
-                if shape!=Tetraminoe.no_shape:
-                    self.draw_square(painter,rect.left()+j*self.square_width(),board_Top+i*self.square_height(),shape)
-        if self.cur_piece.shape()!=Tetraminoe.no_shape:
-            for i in range(4):
-                x=self.cur_x + self.cur_piece.x(i)
-                y=self.cur_y - self.cur_piece.y(i)
-                self.draw_square(painter,rect.left()+x*self.square_width(),board_Top+(Board.board_height - y - 1) * self.square_height(),self.cur_piece.shape())
-                
-class Tetraminoe(object):
-    no_shape = 0
-    zshape = 1                            
-    sshape = 2
-    line_shape = 3
-    tshape = 4
-    square_shape = 5
-    lshape_shape = 6
-    mirorred_l_shape = 7
-    
+            self.timer.start(Board.Speed)
+            self.score_label.setText(f"{self.numLinesRemoved}")
+        self.update()
 
-class Shape():
+    def game_over(self):
+        self.setWindowTitle("Game Over")
+
+
+class Tetrominoe(object):
+    NoShape = 0
+    ZShape = 1
+    SShape = 2
+    LineShape = 3
+    TShape = 4
+    SquareShape = 5
+    LShape = 6
+    MirroredLShape = 7
+
+
+class Shape(object):
     coordsTable = (
-      ((0, 0), (0, 0), (0, 0), (0, 0)),
-      ((0, -1), (0, 0), (-1, 0), (-1, 1)),
-      ((0, -1), (0, 0), (1, 0), (1, 1)),
-      ((0, -1), (0, 0), (0, 1), (0, 2)),
-      ((-1, 0), (0, 0), (1, 0), (0, 1)),
-      ((0, 0), (1, 0), (0, 1), (1, 1)),
-      ((-1, -1), (0, -1), (0, 0), (0, 1)),
-      ((1, -1), (0, -1), (0, 0), (0, 1))
-  )
+        ((0, 0), (0, 0), (0, 0), (0, 0)),
+        ((0, -1), (0, 0), (-1, 0), (-1, 1)),
+        ((0, -1), (0, 0), (1, 0), (1, 1)),
+        ((0, -1), (0, 0), (0, 1), (0, 2)),
+        ((-1, 0), (0, 0), (1, 0), (0, 1)),
+        ((0, 0), (1, 0), (0, 1), (1, 1)),
+        ((-1, -1), (0, -1), (0, 0), (0, 1)),
+        ((1, -1), (0, -1), (0, 0), (0, 1))
+    )
+
     def __init__(self):
-        self.coords = [[0,0] for i in range(4)]
-        self.piece_shape = Tetraminoe.no_shape
-        self.setShape(Tetraminoe.no_shape)
-    
+        self.coords = [[0, 0] for i in range(4)]
+        self.pieceShape = Tetrominoe.NoShape
+        self.setShape(Tetrominoe.NoShape)
+
     def shape(self):
-        return self.piece_shape 
-    
-    def setShape(self,shape):
+        return self.pieceShape
+
+    def setShape(self, shape):
         table = Shape.coordsTable[shape]
         for i in range(4):
-            self.coords[i][0],self.coords[i][1] = table[i][0],table[i][1] 
-        self.piece_shape = shape        
-        
+            for j in range(2):
+                self.coords[i][j] = table[i][j]
+        self.pieceShape = shape
 
-    def set_random_shape(self):
+    def setRandomShape(self):
         self.setShape(random.randint(1, 7))
-        
+
     def x(self, index):
         return self.coords[index][0]
-    
+
     def y(self, index):
         return self.coords[index][1]
-    
-    def set_x(self, index, x):
+
+    def setX(self, index, x):
         self.coords[index][0] = x
-        
-    def set_y(self, index, y):
+
+    def setY(self, index, y):
         self.coords[index][1] = y
 
-    def min_x(self):
+    def minX(self):
         m = self.coords[0][0]
         for i in range(4):
             m = min(m, self.coords[i][0])
-            return m
-        
-    def max_x(self):
+        return m
+
+    def maxX(self):
         m = self.coords[0][0]
         for i in range(4):
             m = max(m, self.coords[i][0])
-            return m 
-    
-    def min_y(self):
+        return m
+
+    def minY(self):
         m = self.coords[0][1]
         for i in range(4):
             m = min(m, self.coords[i][1])
-            return m
-        
-    def max_y(self):
+        return m
+
+    def maxY(self):
         m = self.coords[0][1]
         for i in range(4):
             m = max(m, self.coords[i][1])
-            return m         
-    
-    
-    def rotate_left(self):
-        if self.piece_shape == Tetraminoe.square_shape:
+        return m
+
+    def rotateLeft(self):
+        if self.pieceShape == Tetrominoe.SquareShape:
             return self
+
         result = Shape()
-        result.piece_shape = self.piece_shape
+        result.pieceShape = self.pieceShape
         for i in range(4):
-            result.set_x(i, self.y(i))
-            result.set_y(i, -self.x(i))
+            result.setX(i, self.y(i))
+            result.setY(i, -self.x(i))
         return result
-    
-    def rotate_right(self):
-        if self.piece_shape == Tetraminoe.square_shape:
+
+    def rotateRight(self):
+        if self.pieceShape == Tetrominoe.SquareShape:
             return self
+
         result = Shape()
-        result.piece_shape = self.piece_shape
+        result.pieceShape = self.pieceShape
         for i in range(4):
-            result.set_x(i, -self.y(i))
-            result.set_y(i, self.x(i))
+            result.setX(i, -self.y(i))
+            result.setY(i, self.x(i))
         return result
-       
-if __name__=="__main__":
-    a = QApplication(sys.argv)
-    d = Tetris("tetris")
-    sys.exit(a.exec()) 
+
+
+if __name__ == '__main__':
+    app = QApplication([])
+    tetris = Tetris("Tetris")
+    sys.exit(app.exec_())

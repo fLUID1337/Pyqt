@@ -34,10 +34,12 @@ class Board(QFrame):
     def init_Board(self):
         self.timer=QBasicTimer()
         self.isWaitingAfterLine=False
+        
         self.cur_x=0
         self.cur_y=0   
         self.numLinesRemoved=0
-        self.board=[] 
+        self.board=[]
+         
         self.setFocusPolicy(Qt.StrongFocus)
         self.isStarted=False
         self.isPaused=False
@@ -92,7 +94,7 @@ class Board(QFrame):
         for i in range(4): 
             
             x = newX + newPiece.x(i)
-            y = newY + newPiece.y(i) 
+            y = newY - newPiece.y(i) 
             
             if x < 0 or x >= Board.board_width or y < 0 or y >= Board.board_height:
                 return False
@@ -100,7 +102,7 @@ class Board(QFrame):
                 return False
             
         self.cur_piece = newPiece
-        self.cur_x = newX    
+        self.cur_x= newX    
         self.cur_y = newY    
         self.update()
         
@@ -155,6 +157,7 @@ class Board(QFrame):
         self.cur_piece.set_random_shape()
         self.cur_x = Board.board_width // 2 + 1   
         self.cur_y = Board.board_height - 1 + self.cur_piece.min_y()
+        
         if not self.try_move(self.cur_piece,self.cur_x,self.cur_y):
             self.cur_piece.setShape(Tetraminoe.no_shape)
             self.timer.stop()
@@ -168,7 +171,7 @@ class Board(QFrame):
         painter.fillRect(x + 1, y + 1,self.square_width() - 2,self.square_height() - 2,color)
         painter.setPen(color.lighter())
         painter.drawLine(x,y + self.square_height() - 1,x,y)
-        painter.drawLine(x,y,x + self.square_width(),y)
+        painter.drawLine(x,y,x + self.square_width() - 1,y)
         painter.setPen(color.darker())
         painter.drawLine(x + 1,y + self.square_height() - 1,x + self.square_width() - 1,y + self.square_height() - 1)
         painter.drawLine(x + self.square_width() - 1,y + 1,x + self.square_width() - 1,y + self.square_height() - 1)
@@ -201,6 +204,7 @@ class Board(QFrame):
         self.isWaitingAfterLine = False
         self.numLinesRemoved = 0
         self.clear_board()
+        
         self.score_label.setText(str(self.numLinesRemoved))
         self.new_piece()
         self.timer.start(Board.speed,self)
