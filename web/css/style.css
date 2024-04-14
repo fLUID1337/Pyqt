@@ -1,0 +1,93 @@
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: 500;
+  src:
+    url('../fonts/GoshaSans-Medium.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: 300;
+  src:
+    url('../fonts/GoshaSans-Light.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Light.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: bold;
+  src:
+    url('../fonts/GoshaSans-Bold.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Bold.woff') format('woff');
+
+}
+
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: normal;
+  src:
+    url('../fonts/GoshaSans-Regular.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: 800;
+  src:
+    url('../fonts/GoshaSans-Ultrabold.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Ultrabold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Gosha Sans';
+  font-style: normal;
+  font-weight: 200;
+  src:
+    url('../fonts/GoshaSans-Ultralight.woff2') format('woff2'),
+    url('../fonts/GoshaSans-Ultralight.woff') format('woff');
+}
+
+
+main {
+  background-color: #dc27ab;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+body {
+  margin: 0;
+  font-family: 'GoshaSans', sans-serif;
+  font-style: normal;
+}
+
+.header {
+  margin-top: 0;
+  margin-bottom: 50px;
+  color: white;
+
+}
+
+.btn-download {
+  text-decoration: none;
+  color: white;
+  padding: 20px;
+  border: 3px solid #240122 ;
+  background-color: #240122;
+  
+}
+
+.btn-about {
+  text-decoration: none;
+  color: white;
+  padding: 20px;
+  border: 3px solid white;
+}

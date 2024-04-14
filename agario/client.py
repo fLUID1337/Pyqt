@@ -27,7 +27,15 @@ def draw_bacteries(data:list[str]):
         y=CC[1]+int(data_2[1])
         size=int(data_2[2])
         color=data_2[3]
-        pygame.draw.circle(screen,color,(x,y),size)              
+        if len (data_2)==5:
+            color+=" "+data_2[4]
+        try:    
+            pygame.draw.circle(screen,color,(x,y),size)  
+        except:
+            print(color)
+            print(data_2)
+            exit(0)
+                         
 
 colors= ['Maroon', 'DarkRed', 'FireBrick', 'Red', 'Salmon',
          'Tomato', 'Coral', 'OrangeRed', 'Chocolate', 'SandyBrown',
@@ -96,7 +104,6 @@ while run:
     data=sock.recv(1024).decode().replace("$","").split(",")
     screen.fill('gray')
     if data !=[""]:
-        print(data)
         radius=int(data[0])
         draw_bacteries(data[1:])
     pygame.draw.circle(screen, color, CC, radius)

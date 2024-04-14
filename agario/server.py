@@ -59,6 +59,9 @@ class Local_Player:
         self.color=color
         self.w_vision=800
         self.h_vision=600
+    
+    def new_speed(self):
+        self.abs_speed=10/math.sqrt(self.size)    
         
     def update(self):
         if self.x-self.size<=0:
@@ -76,8 +79,11 @@ class Local_Player:
             if self.y_speed<=0:
                 self.y+=self.y_speed                
         else:
-             self.y+=self.y_speed        
-     
+             self.y+=self.y_speed 
+             
+        if self.size>=100:
+            self.size-=self.size/18000
+
     def change_speed(self,vektor):
         vektor=list(map(float,vektor.split(",")))
         if vektor[0]==0 and vektor[1]==0:
@@ -171,6 +177,34 @@ while run:
         except BlockingIOError:
             pass 
         
+        need=MOB_QUANTITY-len(players)
+        if need>0:
+            names=RussianNames(count=need*2,patronymic=False,surname=False,rare=True)
+            names=list(set(names))
+            for n in range(need):
+                server_mob = Players(names[n], None)
+                server_mob.color = random.choice(colors)
+                spawn:Local_Player=random.choice(foods)
+                #foods.remove(spawn)
+                server_mob.x, server_mob.y = spawn.x,spawn.y
+                server_mob.speed_x, server_mob.speed_y = random.randint(-1, 1),random.randint(-1, 1)
+                server_mob.size = random.randint(10, 100)
+                session.add(server_mob)
+                session.commit()
+                local_mob = Local_Player(server_mob.id, server_mob.name, None, None, "Red").load()
+                local_mob.new_speed()
+                players[server_mob.id] = local_mob
+        
+        need=FOOD_QUANTITY-len(foods)
+        if need>0:
+            for n in range(need):
+                foods.append(Food(
+                x=random.randint(0,WIDTH_ROOM),
+                y=random.randint(0,HEIGHT_ROOM),
+                size=FOOD_SIZE,
+                color=random.choice(colors)
+            ))
+        
     for id in list(players):
         if players[id].sock is not None:
             try:
@@ -194,6 +228,7 @@ while run:
                 distance=math.sqrt(dist_x**2+dist_y**2)
                 if distance<=p_1.size and p_1.size>p_2.size*1.1:
                     p_1.size=math.sqrt(p_1.size**2+p_2.size**2)
+                    p_1.new_speed()
                     p_2.size,p_2.speed_x,p_2.speed_y=0,0,0    
                 if p_1.addres is not None:
                     data=f"{round(dist_x)} {round(dist_y)} {round(p_2.size)} {p_2.color}"
@@ -202,6 +237,7 @@ while run:
                 distance=math.sqrt(dist_x**2+dist_y**2)
                 if distance<=p_2.size and p_2.size>p_1.size*1.1:
                     p_2.size=math.sqrt(p_2.size**2+p_1.size**2)
+                    p_2.new_speed()
                     p_1.size,p_1.speed_x,p_1.speed_y=0,0,0 
                 if p_2.addres is not None:
                     data=f"{round(-dist_x)} {round(-dist_y)} {round(p_1.size)} {p_1.color}"
@@ -215,6 +251,7 @@ while run:
             distance=math.sqrt(dist_x**2+dist_y**2)
             if distance<p_1.size:
                 p_1.size=math.sqrt(p_1.size**2+food.size**2)
+                p_1.new_speed()
                 food.size=0
                 foods.remove(food)   
             if p_1.addres is not None:
